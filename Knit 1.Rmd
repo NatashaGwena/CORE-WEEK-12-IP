@@ -1,0 +1,347 @@
+---
+title: "Blog Ad on an Online Cryptography Course(EDA)"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Importing Libraries/ Reading Data
+
+```{r}
+install.packages("tidyverse")
+install.packages("ggplot2")
+
+library(tidyverse)
+library(ggplot2)
+#Loading data
+ad <- read.csv("http://bit.ly/IPAdvertisingData")
+#Reading head 5
+head(ad)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+## CHECK THE DATA
+```{r}
+#Data Dimensions
+paste("The dimensions of the data frame are ", paste (dim(ad), collapse = ','))
+```
+
+```{r}
+#Datatypes
+sapply(ad, class)
+
+#We have a mix of datatypes from numeric, integer and character
+```
+
+```{r}
+#Summary
+summary(ad)
+```
+
+```{r}
+#Checking for unique characters
+sapply(ad, function(x) length(unique(x)))
+```
+## DATA CLEANING
+```{r}
+#Checking for duplicate rows
+duplicated_rows <- ad[duplicated(ad),]
+duplicated_rows
+
+#There is a duplication of column names
+```
+
+```{r}
+#Selecting only the items without duplicates
+ad_df <- ad[!duplicated(ad), ]
+dim(ad_df)
+```
+
+```{r}
+#Checking for missing values
+colSums(is.na(ad_df))
+
+#We have no missing values
+```
+
+```{r}
+head(ad_df)
+```
+
+```{r}
+#Checking for outliers
+#First we select numeric columns excluding male and clicked.on.ad since they are binary column
+
+df <- subset(ad_df, select = -c(Ad.Topic.Line,City,	Male,	Country,	Timestamp,	Clicked.on.Ad))
+head(df)
+
+```
+
+```{r}
+#Plotting boxplots to check for outliers
+boxplot(df)
+
+#Our Area.Income column have a few outliers of people earning less than 20000
+#We check them out to see whether they are legit
+```
+
+```{r}
+library(magrittr)
+```
+
+```{r}
+#Looking at the outliers
+outliers <- ad_df %>% dplyr::filter(Area.Income < 20000)
+outliers
+```
+# We won't remove the above figures because it concerns income and people earn different amounts of money. Also, it is not defined whether the figures are in shillings, dollars, euros etc. Also, the we don't knw if they are annual incomes, monthly or even weekly. For that matter, we will leave them
+```{r}
+#Change datattypes
+ad_df$Male <- as.factor(ad_df$Male)
+ad_df$Clicked.on.Ad <- as.factor(ad_df$Clicked.on.Ad)
+#Checking datatypes
+sapply(ad_df, class)
+```
+```{r}
+#Changing column timestamp to datetime
+ad_df$Timestamp <- as.POSIXct(ad_df$Timestamp, "%Y-%m-%d %H:%M:%S",tz = "GMT")
+head(ad_df)
+```
+
+```{r}
+#Splitting time and date from Timestamp
+ad_df$date = format(ad_df$Timestamp, "%y/%m/%d")
+ad_df$time = format(ad_df$Timestamp, "%H:%M:%S")
+ad_df$date <- as.Date(ad_df$date)
+head(ad_df)
+```
+
+```{r}
+#Dropping the column Timestamp
+final = subset(ad_df, select = -c(Timestamp))
+head(final)
+```
+## Exploratory Data Analysis
+
+### Univariate Analysis
+
+### Measures of Central Tendency
+```{r}
+#Selecting the numeric columns
+num <- subset(final, select = -c(Ad.Topic.Line,City,	Male,	Country,	date,	Clicked.on.Ad, time))
+#Getting the measures of central tendency 
+summary(num)
+```
+
+```{r}
+var(final$Age)
+sd(final$age)
+```
+### Conclusions
+
+# The minimum amount of time spent on the blog is 32.60 and maximum is 91.43 with a mean at 65 and median at 68
+# The mean age of people visiting the site is 36, max age is 61 and min age is 19 which makes sense since the range between 61 and 19 are the people most active online.
+# From data, the maximum income of individuals is 79485 and a min income of 13996
+# The mean daily internet usage on the website is 180 and a median level at 183.1
+
+
+
+# Distribution of data
+```{r}
+install.packages("moments")
+```
+
+```{r}
+library(moments)
+```
+
+```{r}
+head(num)
+```
+
+```{r}
+#Checking for skewness
+paste("Daily Time_Spent_Skewness: ", paste (skewness(final$Daily.Time.Spent.on.Site), collapse = ',')) 
+paste("Income_Skewness: ", paste (skewness(final$Area.Income), collapse = ',')) 
+paste("Age_Skewness: ", paste (skewness(final$Age), collapse = ',')) 
+paste("Daily_Internet_Usage_Skewness: ", paste (skewness(final$Daily.Internet.Usage), collapse = ',')) 
+  
+# Histogram of distribution 
+#hist(x) 
+```
+
+```{r}
+#Checking for kurtosis
+paste("Daily Time_Spent_Kurtosis: ", paste (kurtosis(final$Daily.Time.Spent.on.Site), collapse = ',')) 
+paste("Income_Kurtosis: ", paste (kurtosis(final$Area.Income), collapse = ',')) 
+paste("Age_Kurtosis: ", paste (kurtosis(final$Age), collapse = ',')) 
+paste("Daily_Internet_Usage_Kurtosis: ", paste (kurtosis(final$Daily.Internet.Usage), collapse = ',')) 
+```
+
+```{r}
+hist(final$Age)
+hist(final$Area.Income)
+hist(final$Daily.Time.Spent.on.Site)
+hist(final$Daily.Internet.Usage)
+```
+#Age: Most people who visit the blog are between 25 and 40 years, data is skewed to the right of the mean. Graph doesn't show a sharp peak
+#Income: Data on income is mostly skewed to the right of the 55,00 mean
+#Time spent on site: There are lots of variations on how much time people spend on the site. A good number does spend between 65 and 85 time on the site.
+
+
+# Categorical Data
+```{r}
+#Which gender is mainly active on the blog?
+ggplot(data = final) +
+  geom_bar(mapping = aes(x = Male))
+
+#Assuming that if male = 1 then we can conclude that more females
+# frequennt the blog more as compared to males
+```
+
+```{r}
+#Do most people clickon ads or not?
+ggplot(data = final) +
+  geom_bar(mapping = aes(x = Clicked.on.Ad))
+
+#There is a balance between the people who click on ads and those who don't
+#We can coclude that half of the people who visit the website willl probably click on an ad
+```
+###  Bivariate Analysis
+## Correlation
+```{r}
+install.packages("corrplot")
+
+library(corrplot)
+```
+
+```{r}
+#Get the correlation matrix
+res = cor(num)
+#Plotting a correlation plot
+
+corrplot(res, method="color",addCoef.col = "black", 
+         tl.col="black", tl.srt=45)   
+```
+### There is a fair correlation between amount spent on site and the Daily internet usage.
+```{r}
+x <- final$Daily.Internet.Usage
+y <-  final$Daily.Time.Spent.on.Site
+# Plot with main and axis titles
+# Change point shape (pch = 19) and remove frame.
+plot(x, y, main = "Time spent on site vs Daily Internet Usage",
+     xlab = "Daily Internet Usage", ylab = "Time sspent on site",
+     pch = 20)
+```
+# The points are all over but our data points are not highly correlated which explains this. But we can see that people who spend less time on site use less internet. Also, most of the people who use alot of internet per day seem to spend a considerable amount of time on the site.
+
+# This is a good sign for the business
+
+### Explore which individuals are most likely to click on an ad
+```{r}
+#Who is likely to click on an ad, female or male?
+library(ggplot2)
+
+# stacked bar chart
+ggplot(final, 
+       aes(x = Clicked.on.Ad, 
+           fill = Male)) + 
+  geom_bar(position = "stack")
+```
+# From above graph, we can see that female(where male=0), is slightly more likely to click on an ad that male.
+
+# But also from earlier analysis, it is important to note that females are slightly more frequent on the blog than male.
+```{r}
+#Income class and it's relationship to clicking an ad
+ggplot(final, 
+       aes(x = Area.Income, 
+           fill = Clicked.on.Ad)) +
+  geom_density(alpha = 0.4) +
+  labs(title = "Income vs chances of clicking on an ad")
+```
+# The income range for people who click on an ad is large as compared to those that don't. People from all ranges of income are likely to click on an ad but most of the group with an income of above 60000 are not likely to click on an ad.
+```{r}
+#Age and it's relationship to clicking an ad
+ggplot(final, 
+       aes(x = Age, 
+           fill = Clicked.on.Ad)) +
+  geom_density(alpha = 0.4) +
+  labs(title = "Age distribution vs chances of clicking on an ad")
+```
+# People from all age groups click on ads on the site. People above 40 are more likely to click on an ad as per the graph above.
+```{r}
+#Age and it's relationship to clicking an ad
+ggplot(final, 
+       aes(x = Daily.Time.Spent.on.Site, 
+           fill = Clicked.on.Ad)) +
+  geom_density(alpha = 0.4) +
+  labs(title = "Relationship between time spent on site and chances of clicking on an ad")
+```
+# People who spend less time on the site are likely to click on an ad as compared to those who spend alot of time on the site.
+
+# But, all kinds of people including those who spend alot of time on site might click on an ad.
+```{r}
+#Internet Usage and it's relationship to clicking an ad
+ggplot(final, 
+       aes(x = Daily.Internet.Usage, 
+           fill = Clicked.on.Ad)) +
+  geom_density(alpha = 0.4) +
+  labs(title = "Time spent on site Vs. Chance of clicking on an ad")
+```
+# There is some kind of uniformity between Daily Internet Usage and whether a user will click on an ad or not. Most people who click on an add do not spend alot od internet per day. And most of those who don't click on anad seem to spend a lot of toime in the site
+```{r}
+
+```
+### CONCLUSION
+
+* People who have a daily internet usage of less than 175 are more likely to click on an ad
+* People who spend less than 70mins on the site are likely to click on ad
+* People above 40 are more likely to click on an ad
+* People with an income of less than 60000 are most likely to click on an ad
+* The female gender is likely to click on ad
+
+### CHALLENGING THE SOLUTION
+
+* It would be great to do some hypothesis testing on the conclusions made from Exploratory Data Analysis, this way we could ascertain the chances of specific person clicking on an ad or not.
+
+* Also, it would be necessary to create a predictive model and perform some feature importance selection to choose which variables are most important to use when deciding who will click on an ad or not when using the website.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
